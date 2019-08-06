@@ -5,6 +5,7 @@ const userSchema = mongoose.Schema({
     email:{type: String,required:true,unique:true},
     password: {type: String,required:true},
     admin:{type:Boolean,default:false},
+    avatar:{type:String,default:false},
     createdAt:Date,
     updatedAt:Date
 });

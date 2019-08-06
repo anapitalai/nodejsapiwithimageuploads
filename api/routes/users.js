@@ -2,20 +2,40 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const uriUtil = require('mongodb-uri');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
+const multer = require('multer');
 const User = require('../models/user.model');
 const DateUpdate = require('../middleware/date');
 
-
+const storage=multer.diskStorage({
+    destination: function(req,file,cb){
+        cb(null,'./avatars/');
+    },
+    filename: function(req,file,cb){
+        cb(null,new Date().toISOString()+file.originalname);
+    }
+});
+const fileFilter=(req,file,cb)=>{
+    if(file.mimetype==='image/jpeg' || file.mimetype==='image/png'){
+        cb(null,true);
+    }
+    else{
+        cb(null,false);
+    }
+};
+const upload = multer({storage:storage,limit:{
+    fileSize:1024 * 1024 * 5
+},
+fileFilter:fileFilter
+}); 
 //allUsers
 
 
 //get all alumni routes
-router.get('/',(req,res,next)=>{
+/** router.get('/',(req,res,next)=>{
     User.find()
-    .select('_id email password admin createdAt updatedAt')
+    .select('_id email password admin avatar createdAt updatedAt')
     .exec()
     .then(docs=>{
        res.status(200).json(docs);
@@ -25,10 +45,53 @@ router.get('/',(req,res,next)=>{
         res.status(500).json({error:err});
     });
    });
+   **/
+  router.get('/',(req,res,next)=>{
+    User.find()
+    .select('_id email admin avatar createdAt updatedAt')
+    .exec()
+    .then(doc=>{
    
+     ///** 
+       console.log(doc);
+       const response={
+           count:doc.length,
+           teachers:doc.map(docs=>
+              {
+                   
+               return {
+                   id:docs._id,
+                   email:docs.email,
+                   admin:docs.admin,
+                   updatedAt:doc.updatedAt,
+                   createdAt:doc.createdAt,
+                   avatarImage:'http://localhost:3007/'+docs.avatar,
+               request:{
+                 type:'GET',
+                 url:'http://localhost:3007/teachers/' + docs._id
+               },
+               requestAvatar:{
+                   type:'GET',
+                   url:'http://localhost:3007/' + docs.avatar
+                 }
+               }
+               }
+       )};
+       
+      // **/
+   
+       res.status(200).json(response); //change back to docs
+   })
+    .catch(err=>{
+        console.log(err);
+        res.status(500).json({error:err});
+    });
+   });
+
 
 //add a login user route
-router.post('/signup',(req,res,next)=>{
+router.post('/signup',upload.single('avatar'),(req,res,next)=>{
+    
     User.find({email:req.body.email})
     .exec()
     .then(user=>{
@@ -47,6 +110,7 @@ router.post('/signup',(req,res,next)=>{
                 _id: new mongoose.Types.ObjectId(),
                 email: req.body.email,
                 password:hash,
+                avatar:req.file.path,
                 admin:req.body.admin}
             );
             //test
@@ -80,15 +144,16 @@ router.post('/login',(req,res,next)=>{
             });
         }
         bcrypt.compare(req.body.password,user[0].password,(err,result)=>{
+
             if(err){
                 res.status(401).json({
                     message:'Athentication failed!'
                    });
             }
             if(result){
-               const token = jwt.sign({email:user[0].email,userId:user[0]._id},'secretpassword',{
-                    expiresIn:"1h"
-                });
+               const token = jwt.sign({email:user[0].email,userId:user[0]._id},new Buffer('secretpassword', 'base64'),
+                    {expiresIn:"1h"}
+                );
 
 
                return res.status(200).json({

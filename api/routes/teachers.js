@@ -38,11 +38,16 @@ const Teacher = require('../models/teacher.model');
 //get all alumni routes
 router.get('/',(req,res,next)=>{
  Teacher.find()
- .select('_id  name username nid avatarImage createdAt updatedAt')
+ .select('_id  name description price propertyImages createdAt updatedAt')
  .exec()
  .then(doc=>{
 
   ///** 
+  var arr = [];
+  for (var i = 0; i < req.files.length; ++i) {
+    arr.push({ prop:req.files[i].path });
+  }
+
     console.log(doc);
     const response={
         count:doc.length,
@@ -50,33 +55,26 @@ router.get('/',(req,res,next)=>{
            {
                 
             return {
+                
                 id:docs._id,
                 name:docs.name,
-                username:docs.username,
-                //dob:docs.dob,
-                nid:docs.nid,
-                //province:docs.province,
-                //district:docs.district,
-                //village:docs.village,
-                //childCount:docs.childCount,
-                //spouse:docs.spouse,
-                //maritalStatus:doc.maritalStatus,
-                //avatarImage:doc.avatarImage,
+                description:docs.description,
+                price:docs.price,
+                propertyImages:doc.propertyImages,
                 updatedAt:doc.updatedAt,
                 createdAt:doc.createdAt,
-                avatarImage:'http://localhost:3007/'+docs.avatarImage,
+                propertyImages:'http://localhost:3007/'+docs.propertyImages,
             request:{
               type:'GET',
               url:'http://localhost:3007/teachers/' + docs._id
             },
             requestAvatar:{
                 type:'GET',
-                url:'http://localhost:3007/' + docs.avatarImage
+                url:'http://localhost:3007/' + docs.propertyImages
               }
             }
             }
-    )}
-    ;
+    )};
     
    // **/
 
@@ -90,20 +88,21 @@ router.get('/',(req,res,next)=>{
 
 //add a new alumni route
   // router.post('/',upload.array("uploads[]",12),(req,res,next)=>{
-    router.post('/',upload.single('avatarImage'),(req,res,next)=>{
-    const teacher = new Teacher({
+    router.post('/',upload.array('propertyImages',4),(req,res,next)=>{
+        //console.log(req.files);
+
+        var arr = [];
+        for (var i = 0; i < req.files.length; ++i) {
+          arr.push({ prop:req.files[i].path });
+        }
+        console.log(arr);
+
+        const teacher = new Teacher({
         _id: new mongoose.Types.ObjectId(),
         name: req.body.name,
-        username:req.body.username,
-        //dob: req.body.dob,
-        nid: req.body.nid,
-        //province:req.body.province,
-        //district:req.body.district,
-        //village:req.body.village,
-        //childCount:req.body.childCount,
-        //spouse:req.body.spouse,
-        //maritalStatus:req.body.maritalStatus,
-        avatarImage:req.file.path
+        description:req.body.description,
+        price: req.body.price,
+        propertyImages:arr
 
     }); 
     teacher
@@ -138,7 +137,7 @@ router.get('/',(req,res,next)=>{
 router.get('/:memberId',(req,res,next)=>{
     const id=req.params.memberId;
     Teacher.findById(id)
-    .select('_id name username nid avatarImage')
+    .select('_id name username nid propertyImages')
     .exec()
     .then(doc=>{
        console.log('From DB',doc);

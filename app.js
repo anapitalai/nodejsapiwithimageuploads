@@ -17,7 +17,7 @@ const uploadRoutes = require('./api/routes/uploads');
 //    useMongoClient:true
 //});
 
-const mongodbUri = 'mongodb://localhost:27017/education';
+const mongodbUri = 'mongodb://localhost:27017/nodejsraliku';
 const mongooseUri = uriUtil.formatMongoose(mongodbUri);
 const dbOptions = {};
 
@@ -32,6 +32,7 @@ mongoose.connect(mongooseUri, dbOptions, (err) => {
 const app = express();
 app.use(morgan('dev'));
 app.use('/uploads',express.static('uploads')); //added sly
+app.use('/avatars',express.static('avatars')); //added sly
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:false}));
 
